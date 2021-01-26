@@ -1,0 +1,86 @@
+收集本机信息
+	网络配置信息
+		ipconfig /all  
+		arp -a                                                            查询arp缓存表
+	操作系统及软件信息
+		systeminfo                                                     系统整体信息
+		wmic product get name,version                   wmic查询安装软件、版本、路径
+		powershell  "Get-WmiObject -class Win32_Product |Select-Object -Property name,version"                           
+	本机服务信息
+		wmic service list brief                                  查询本机服务信息
+	查看进程列表                                              
+		tasklist                                                          查询进程列表
+		wmic process list brief                                  查看进程信息
+	查看启动程序信息
+		wmic startup get command,caption
+	查看计划任务
+		schtasks           /query /fo LIST /v
+	查看主机开机时间
+		net  statistics workstation
+	查询用户列表
+		net user                                                                               本机用户列表
+		net localgroup                                                                     查询用户组
+		net  localgroup <用户组名称>                                             查询用户组详细成员信息
+		query user || qwinsta                                                            查询当前在线用户
+	查询本机和客户端连接
+		net session
+	查询端口列表
+		netstat -ano
+	查询补丁信息
+		systeminfo
+		wmic qfe get Caption,Description,HotFixID,InstalledOn                        wmic方式查看
+	查询本机共享列表
+		net share
+		wmic share get name,path,status
+	查询远程连接服务
+		reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /V PortNumber                                               查询远程连接端口
+查询当前权限
+	查看当前权限
+		whoami                               
+		主机用户一般有三种情况：本地普通用户、本地管理员用户、域内用户。一般而言，若内网存在域
+	本地普通用户只能查询本地信息，本地管理员用户和域内用户可以查询域内信息
+	获取域SID
+		whoami  /all                                        获取域用户SID，域的SID是域用户的SID去掉后四位
+	查询指定用户的详细信息
+		net user  *** <用户组>                       查询在用户组的***用户的具体信息  eg:  net user admin /domain    
+
+域信息
+判断是否存在域 
+	ipconfig    /all
+	systeminfo  
+	net config workstation
+域内信息收集
+		net view /domain                                                       查看主域
+		
+		net view /domain:<域名>                                       
+		
+		net group /domain                                                  
+		
+		net group <用户组>  /domain                                       eg: net group "domain computers" /domain   查看域内所有主机
+		
+		nltest  /domain_trusts                                               查看域内信任关系
+		
+查找域控
+	查看域控机器名称
+		nltest /DCLIST:<域名>
+	
+	查看域控的主机名称
+		Nslookup -type=SRV _ldap._tcp
+	查找域控ip地址
+		Nslookup   <域控主机名称>                                               查找域控的ip地址 
+	
+	查看时间
+		net  time /domain                                                                             一般时间服务器是主域控，从而判断域控
+	查看域控控制器组
+		net  group "domain controllers" /domain                  
+获取域内用户和管理员信息
+		查询所有域用户
+			net user /domain
+			wmic useraccount get /all
+			dsquery  user                                                                           //查询存在的用户
+		查询本地管理员用户
+			net localgroup administrators
+			
+		查询域管理员
+			net group “domain admins” /domain
+	
