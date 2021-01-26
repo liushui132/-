@@ -1,0 +1,11 @@
+	判断机器能否与外网连接，判断各协议及端口通信情况
+	1、ICMP协议 
+	         执行：   ping   <ip地址/域名>  （受害机器上执行）
+	2、TCP协议
+	         执行：   nc   <ip地址 端口>        (攻击机上执行）
+	3、HTTP协议
+	         执行     wget       （linux机器，windows一般没有 wget）
+		curl           (常用于 windows,linux)
+	4、DNS协议 
+		执行    nslookup   域名  vps-ip     (windows机器命令）
+执行   dig                                     (linux机器命令）
