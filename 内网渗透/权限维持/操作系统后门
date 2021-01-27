@@ -28,3 +28,5 @@ WMI型后门
 		Get-WMIObject -Namespace root\Subscription -Class CommandLineEventConsumer -Filter “Name=’Updater’”
 		重启目标机器
 		wmi后门成功建立连接
+
+参考链接：https://zhuanlan.zhihu.com/p/255065815?utm_source=wechat_timeline
